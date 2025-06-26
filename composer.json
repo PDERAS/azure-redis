@@ -1,0 +1,31 @@
+{
+    "name": "pderas/azure-redis",
+    "version": "0.0.1",
+    "description": "Handles Azure Redis connection using Azure Managed Identities",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Pderas\\AzureRedisAuth\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Brock Roadhouse",
+            "email": "brock.roadhouse@fabledsolutions.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": "^8.1",
+        "illuminate/support": "^8.0|^9.0|^10.0|^11.0|^12.0",
+        "illuminate/queue": "^8.0|^9.0|^10.0|^11.0|^12.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Pderas\\AzureRedisAuth\\Providers\\AzureRedisAuthServiceProvider"
+            ]
+        }
+    }
+}
