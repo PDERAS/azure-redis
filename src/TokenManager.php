@@ -3,6 +3,7 @@
 namespace Pderas\AzureRedisAuth;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 use \Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Redis;
@@ -77,8 +78,21 @@ class TokenManager
     {
         // Try to get token and data from cache
         $cache = $this->getCache();
-        $this->token = $cache->get($this->cache_key);
-        $this->token_data = $cache->get($this->cache_data_key, []);
+        $encrypted_token = $cache->get($this->cache_key);
+        $encrypted_token_data = $cache->get($this->cache_data_key);
+
+        // Invalid if token or data is not found in cache
+        if (!$encrypted_token || !$encrypted_token_data) {
+            return false;
+        }
+
+        try {
+            $this->token = Crypt::decrypt($encrypted_token);
+            $this->token_data = Crypt::decrypt($encrypted_token_data);
+        } catch (\Exception $e) {
+            // If decryption fails, treat the token as invalid
+            return false;
+        }
 
         if (empty($this->token_data)) {
             return false;
@@ -112,7 +126,7 @@ class TokenManager
         $this->decodeToken();
 
         // Store for 20 hours
-        $this->getCache()->put($this->cache_key, $this->token, $this->getCacheTtl());
+        $this->getCache()->put($this->cache_key, Crypt::encrypt($this->token), $this->getCacheTtl());
     }
 
     /**
@@ -154,7 +168,7 @@ class TokenManager
 
         $this->token_data = json_decode($payload, true);
 
-        $this->getCache()->put($this->cache_data_key, $this->token_data, $this->getCacheTtl());
+        $this->getCache()->put($this->cache_data_key, Crypt::encrypt($this->token_data), $this->getCacheTtl());
     }
 
     /**

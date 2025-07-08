@@ -44,7 +44,7 @@ class AzureRedisAuthServiceProvider extends ServiceProvider
 
         $manager = $this->app->make(TokenManager::class);
 
-        $manager->setRedisCredentials();
+        $manager->refreshCredentialsIfNeeded();
 
         // Refresh once when the worker starts
         Event::listen(CommandStarting::class, function ($event) use ($manager) {
