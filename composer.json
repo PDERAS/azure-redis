@@ -1,6 +1,6 @@
 {
     "name": "pderas/azure-redis",
-    "version": "0.0.2",
+    "version": "0.1.0",
     "description": "Handles Azure Redis connection using Azure Managed Identities",
     "type": "library",
     "license": "MIT",
