@@ -2,12 +2,23 @@
 
 namespace Pderas\AzureRedisAuth;
 
+use Illuminate\Support\Facades\Cache;
 use \Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Redis;
 
 class TokenManager
 {
+    /**
+     * The cache key for the Azure Redis authentication token.
+     */
+    private string $cache_key = 'azure_redis_token';
+
+    /**
+     * The cache key for the decoded token data.
+     */
+    private string $cache_data_key = 'azure_redis_token_data';
+
     /**
      * The Azure Redis authentication token.
      */
@@ -28,7 +39,7 @@ class TokenManager
      */
     public function setRedisCredentials(): void
     {
-        $this->fetchToken();
+        $this->refreshToken();
 
         if ($this->token) {
             $connection_name = config('azure-redis-auth.connection', 'default');
@@ -50,10 +61,7 @@ class TokenManager
      */
     public function refreshCredentialsIfNeeded(): void
     {
-        $expiry = $this->getExpiry();
-
-        // Check if the token is still valid
-        if ($expiry && $expiry->isFuture()) {
+        if ($this->tokenIsValid()) {
             return;
         }
 
@@ -61,9 +69,36 @@ class TokenManager
     }
 
     /**
+     * Checks if the current token is valid.
+     *
+     * A token is considered valid if it exists and has not expired.
+     */
+    private function tokenIsValid(): bool
+    {
+        // Try to get token and data from cache
+        $cache = $this->getCache();
+        $this->token = $cache->get($this->cache_key);
+        $this->token_data = $cache->get($this->cache_data_key, []);
+
+        if (empty($this->token_data)) {
+            return false;
+        }
+
+        $expiry = $this->getExpiry();
+
+        // If expiry is null, assume the token is invalid
+        if (!$expiry) {
+            return false;
+        }
+
+        // Check if the token is still valid (not expired)
+        return $expiry->isFuture();
+    }
+
+    /**
      * Retrieves the credentials for Redis authentication.
      */
-    private function fetchToken(): void
+    private function refreshToken(): void
     {
         $response = Http::withHeaders([
             'Metadata' => 'true',
@@ -73,7 +108,11 @@ class TokenManager
         ]);
 
         $this->token = $response->json('access_token', '');
+
         $this->decodeToken();
+
+        // Store for 20 hours
+        $this->getCache()->put($this->cache_key, $this->token, $this->getCacheTtl());
     }
 
     /**
@@ -114,5 +153,54 @@ class TokenManager
         $payload = base64_decode(strtr($parts[1], '-_', '+/'));
 
         $this->token_data = json_decode($payload, true);
+
+        $this->getCache()->put($this->cache_data_key, $this->token_data, $this->getCacheTtl());
+    }
+
+    /**
+     * Gets the cache TTL (time to live) for the token.
+     */
+    private function getCacheTtl(): int
+    {
+        $expiry = $this->getExpiry();
+
+        // If expiry not set, default to 20 hours
+        if (!$expiry) {
+            return 20 * 60 * 60;
+        }
+
+        // Calculate the TTL (time to live) in seconds with a buffer of 1 hour
+        // to ensure the token is refreshed before it expires
+        $ttl = $expiry->diffInSeconds(Carbon::now()) - 3600;
+
+        return max($ttl, 30); // Ensure TTL is not negative
+    }
+
+    /**
+     * Gets the cache repository for the configured cache driver.
+     */
+    private function getCache(): \Illuminate\Contracts\Cache\Repository
+    {
+        // Get the cache driver configured in Laravel
+        $driver = $this->getCacheDriver();
+
+        // Return the cache repository for the specified driver
+        return Cache::store($driver);
+    }
+
+    /**
+     * Gets the cache driver configured in Laravel.
+     */
+    private function getCacheDriver(): string
+    {
+        // Return the cache driver configured in Laravel
+        $driver = config('azure-redis-auth.token_cache', 'database');
+
+        // Redis is not allowed as a cache driver for storing tokens
+        if ($driver === 'redis') {
+            throw new \Exception('The "redis" cache driver cannot be used for storing Azure Redis authentication tokens.');
+        }
+
+        return $driver;
     }
 }
