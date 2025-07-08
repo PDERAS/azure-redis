@@ -5,6 +5,7 @@ namespace Pderas\AzureRedisAuth\Providers;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\ServiceProvider;
 use Pderas\AzureRedisAuth\TokenManager;
 
@@ -47,13 +48,16 @@ class AzureRedisAuthServiceProvider extends ServiceProvider
 
         // Refresh once when the worker starts
         Event::listen(CommandStarting::class, function ($event) use ($manager) {
-            if (in_array($event->command, ['queue:work', 'queue:listen', 'horizon'])) {
-                $manager->refreshCredentialsIfNeeded();
-            }
+            $manager->refreshCredentialsIfNeeded();
         });
 
         // Refresh when workers start
         Event::listen(JobProcessing::class, function () use ($manager) {
+            $manager->refreshCredentialsIfNeeded();
+        });
+
+        // Refresh credentials before processing any queued jobs
+        Queue::before(function () use ($manager) {
             $manager->refreshCredentialsIfNeeded();
         });
     }
