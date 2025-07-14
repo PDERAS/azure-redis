@@ -40,10 +40,10 @@ class TokenManager
      */
     public function setRedisCredentials(): void
     {
-        $this->refreshToken();
+        $this->refreshCredentialsIfNeeded();
 
         if ($this->token) {
-            $connection_name = config('azure-redis-auth.connection', 'default');
+            $connection_name = 'azure_managed';
 
             Redis::purge($connection_name);
 
@@ -66,7 +66,7 @@ class TokenManager
             return;
         }
 
-        $this->setRedisCredentials();
+        $this->refreshToken();
     }
 
     /**
