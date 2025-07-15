@@ -33,17 +33,21 @@ php artisan vendor:publish --provider="Pderas\AzureRedis\AzureRedisAuthServicePr
 ```
 
 # Usage
-This package will use the the following variables to make a Redis connection.
+Set `redis.client` in `config/database.php` to 'azure'. This can be done with an env variable.
 ```php
-'azure_managed' => [
-    'scheme'   => env('REDIS_SCHEME', 'tls'),
-    'url'      => env('REDIS_URL'),
-    'host'     => env('REDIS_HOST', '127.0.0.1'),
-    'username' => '',   // Will be set dynamically
-    'password' => '',   // Will be set dynamically
-    'port'     => env('REDIS_PORT', 6379),
-    'database' => env('REDIS_DB', 0),
-],
+// config/database.php
+
+return [
+    // ...
+    'redis' => [
+        'client' => env('REDIS_CLIENT', 'phpredis'),
+        // ...
+    ],
+];
+```
+Then, in your `.env`
+```ini
+REDIS_CLIENT=azure
 ```
 
 ## Token Cache
@@ -53,11 +57,6 @@ AZURE_REDIS_TOKEN_CACHE=
 ```
 **Note:** "redis" cannot be used for this option as this will create a circular dependency
 
-## Disable Manage Identity Auth
-To fall back to standard Redis credentials (e.g. access key), set:
-```ini
-AZURE_REDIS_AUTH_ENABLED=false
-```
 
 ## Optional Configuration Publishing
 If you want to manually override these values with anything other than env variables, the config file can be published.
