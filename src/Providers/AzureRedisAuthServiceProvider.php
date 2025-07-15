@@ -54,7 +54,7 @@ class AzureRedisAuthServiceProvider extends ServiceProvider
         ], 'azure-redis-auth-config');
 
         // Exit if not using the 'azure' redis client
-        if (!config('database.redis.client') === self::DRIVER_NAME) {
+        if (config('database.redis.client') !== self::DRIVER_NAME) {
             return;
         }
 
