@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use \Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Redis;
 
 class TokenManager
 {
@@ -36,25 +35,6 @@ class TokenManager
     private static string $api_version = '2023-11-15';
 
     /**
-     * Set Redis credentials from Azure Metadata Service.
-     */
-    public function setRedisCredentials(): void
-    {
-        $this->refreshCredentialsIfNeeded();
-
-        if ($this->token) {
-            $connection_name = 'azure_managed';
-
-            Redis::purge($connection_name);
-
-            config(["database.redis.{$connection_name}.username" => $this->getUsername()]);
-            config(["database.redis.{$connection_name}.password" => $this->token]);
-        } else {
-            throw new \Exception('Failed to retrieve Redis credentials from Azure Metadata Service.');
-        }
-    }
-
-    /**
      * Refresh Redis credentials if they are expired or not set.
      *
      * This method checks if the token is still valid and refreshes it if necessary.
@@ -74,7 +54,7 @@ class TokenManager
      *
      * A token is considered valid if it exists and has not expired.
      */
-    private function tokenIsValid(): bool
+    public function tokenIsValid(): bool
     {
         // Try to get token and data from cache
         $cache = $this->getCache();
@@ -132,9 +112,21 @@ class TokenManager
     /**
      * Retrieves the username from the token.
      */
-    private function getUsername(): ?string
+    public function getUsername(): ?string
     {
+        $this->refreshCredentialsIfNeeded();
+
         return $this->token_data['oid'] ?? null;
+    }
+
+    /**
+     * Retrieves the username from the token.
+     */
+    public function getPassword(): ?string
+    {
+        $this->refreshCredentialsIfNeeded();
+
+        return $this->token;
     }
 
     /**

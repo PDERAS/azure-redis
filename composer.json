@@ -1,6 +1,6 @@
 {
     "name": "pderas/azure-redis",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "description": "Handles Azure Redis connection using Azure Managed Identities",
     "type": "library",
     "license": "MIT",
@@ -18,8 +18,13 @@
     "minimum-stability": "stable",
     "require": {
         "php": "^8.1",
-        "illuminate/support": "^8.0|^9.0|^10.0|^11.0|^12.0",
-        "illuminate/queue": "^8.0|^9.0|^10.0|^11.0|^12.0"
+        "illuminate/support": "^10.0|^11.0|^12.0",
+        "illuminate/queue": "^10.0|^11.0|^12.0",
+        "illuminate/redis": "^10.0|^11.0|^12.0",
+        "illuminate/cache": "^10.0|^11.0|^12.0",
+        "illuminate/encryption": "^10.0|^11.0|^12.0",
+        "illuminate/console": "^10.0|^11.0|^12.0",
+        "illuminate/events": "^10.0|^11.0|^12.0"
     },
     "extra": {
         "laravel": {
